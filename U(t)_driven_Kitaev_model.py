@@ -77,3 +77,5 @@ def check_phs_U_total(U_total_k):
     return err
 err_U = check_phs_U_total(U_total_k)
 print("PHS error for U(T) =", err_U)
+
+# It works :)
