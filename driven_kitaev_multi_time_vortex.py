@@ -1,10 +1,14 @@
+# Multi-vortex implementation in the Kitaev honeycomb model  with
+# periodic boundary conditions 
+# 
+
 import numpy as np
 from scipy.linalg import expm
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 from matplotlib.lines import Line2D
 
-
+# Original Bloch Hamiltonian in full k space 
 def kitaev_hamiltonian(kx, ky, Jx, Jy, Jz, a0):
     dx_k = Jy * np.sin(kx * a0) + Jz * np.sin(ky * a0)
     dy_k = Jx + Jy * np.cos(kx * a0) + Jz * np.cos(ky * a0)
@@ -14,7 +18,7 @@ def kitaev_hamiltonian(kx, ky, Jx, Jy, Jz, a0):
 
     return dx_k * sig_x + dy_k * sig_y
 
-
+# Original unitary in K space 
 def floquet_unitary(kx, ky, T, pulse_params, a0):
     U = np.eye(2, dtype=complex)
     for Jx, Jy, Jz, dt in pulse_params:
@@ -22,26 +26,9 @@ def floquet_unitary(kx, ky, T, pulse_params, a0):
         U = expm(-1j * H_k * dt) @ U
     return U
 
-
-def quasienergy_calc(Nkx, Nky, T, pulse_params, a0):
-    kx_vals = 2 * np.pi * np.arange(Nkx) / (Nkx * a0)
-    ky_vals = 2 * np.pi * np.arange(Nky) / (Nky * a0)
-    eps_k = np.zeros((Nky, Nkx, 2), dtype=float)
-
-    for iy, ky in enumerate(ky_vals):
-        for ix, kx in enumerate(kx_vals):
-            U = floquet_unitary(kx, ky, T, pulse_params, a0)
-            evals = np.linalg.eigvals(U)
-            eps_k[iy, ix, :] = np.sort(-np.angle(evals))
-
-    return kx_vals, ky_vals, eps_k
-
-
-# ============================================================
-# Real-space lattice geometry
-# ============================================================
-
+# Lattice site builing 
 def site_pos(i, Nx):
+    # Maps site i to unit cell coords 
     cell = i // 2
     y = cell // Nx
     x = cell % Nx
@@ -49,13 +36,14 @@ def site_pos(i, Nx):
 
 
 def site_pos_with_sub(i, Nx, Ny):
+    # Maps site index i to (x,y, sublattice)
     cell = i // 2
     sub = i % 2
     y = cell // Nx
     x = cell % Nx
     return x, y, sub
 
-
+]#builds real space kitav lattice 
 def honeycomb_coords(x, y, sub, a0=1.0):
     a1 = np.array([1.0, 0.0]) * a0
     a2 = np.array([0.5, np.sqrt(3) / 2]) * a0
@@ -72,7 +60,8 @@ def cell_index(x, y, Nx, Ny):
 def site_index(x, y, sub, Nx, Ny):
     return 2 * cell_index(x, y, Nx, Ny) + sub
 
-
+#generates nearest neighbour bonds to connet sites on lattice 
+# We have for each entry (Site a, Site b, bond_type, bond_midpoint)
 def bond_list_pbc(Nx, Ny, a0=1.0):
     bonds = []
     for x in range(Nx):
@@ -94,10 +83,9 @@ def bond_list_pbc(Nx, Ny, a0=1.0):
     return bonds
 
 
-# ============================================================
-# Time-vortex phase field on the torus
-# ============================================================
 
+# Bravis lattice vectors for a hexagonal lattice 
+# With required displacment
 def torus_metric_vectors(Nx, Ny, a0=1.0):
     L1 = Nx * np.array([1.0, 0.0]) * a0
     L2 = Ny * np.array([0.5, np.sqrt(3) / 2]) * a0
@@ -105,19 +93,20 @@ def torus_metric_vectors(Nx, Ny, a0=1.0):
     Minv = np.linalg.inv(M)
     return M, Minv
 
-
 def minimum_image_displacement(r, r0, M, Minv):
     coeffs = Minv @ (r - r0)
     coeffs -= np.round(coeffs)
     return M @ coeffs
 
-
+# Computes the total vortex field at r 
+# We say +1 for vortex and -1 for antivortex 
 def phase_from_vortices(r, vortex_list, M, Minv):
     z = 1.0 + 0.0j
     for (x0, y0, q) in vortex_list:
         r0 = honeycomb_coords(x0, y0, 0, a0=1.0)
         dr = minimum_image_displacement(r, r0, M, Minv)
         w = dr[0] + 1j * dr[1]
+        # Avoid division by zero exactly at a vortex core
         if np.abs(w) < 1e-12:
             continue
         if q == 1:
@@ -128,7 +117,7 @@ def phase_from_vortices(r, vortex_list, M, Minv):
             z *= (w / np.abs(w)) ** q
     return np.angle(z)
 
-
+# Assigns phase to each bond midpoint causing the temporal effects 
 def bond_phase(i, j, Nx, Ny, vortex_list, a0=1.0):
     xi, yi, subi = site_pos_with_sub(i, Nx, Ny)
     xj, yj, subj = site_pos_with_sub(j, Nx, Ny)
@@ -138,11 +127,7 @@ def bond_phase(i, j, Nx, Ny, vortex_list, a0=1.0):
     M, Minv = torus_metric_vectors(Nx, Ny, a0=a0)
     return phase_from_vortices(rmid, vortex_list, M, Minv)
 
-
-# ============================================================
-# Real-space representation of the SAME Kitaev Hamiltonian
-# ============================================================
-
+# Real space implemtation of the lattice 
 def kitaev_hamiltonian_realspace_from_bonds(Jx, Jy, Jz, a0, Nx, Ny):
     """
     Real-space matrix representation of the same nearest-neighbour
@@ -352,55 +337,6 @@ if np.max(ldos_grid_pi_v) > 0:
     ldos_grid_pi_v /= np.max(ldos_grid_pi_v)
 
 print('energy', quasi_v[near_pi_v])
-
-# ============================================================
-# Quasienergy scatter
-# ============================================================
-
-eps = quasi_v
-sort_idx = np.argsort(eps)
-eps_sorted = eps[sort_idx]
-
-plt.figure(figsize=(8, 5))
-plt.title('Quasienergy Spectrum with Vortex-Antivortex Pair')
-plt.xlabel('State index (sorted by eps)')
-plt.ylabel('Quasienergy')
-plt.scatter(np.arange(len(eps_sorted)), eps_sorted, s=15, marker='o', color='purple')
-plt.axhline(np.pi, color='r', linestyle='--', label=r'$\pi$')
-plt.axhline(-np.pi, color='r', linestyle='--')
-plt.legend(loc='lower right')
-plt.tight_layout()
-plt.show()
-
-# ============================================================
-# k-space quasienergy plot
-# ============================================================
-
-pulse_params_k = [
-    (J0, 0,  J0, T / 6.0),
-    (J0, 0,  0,  T / 6.0),
-    (J0, J0, 0,  T / 6.0),
-    (0,  J0, 0,  T / 6.0),
-    (0,  J0, J0, T / 6.0),
-    (0,  0,  J0, T / 6.0),
-]
-
-kx_vals, ky_vals, eps_k = quasienergy_calc(31, 31, T, pulse_params_k, a0)
-KX, KY = np.meshgrid(kx_vals, ky_vals)
-
-plt.figure(figsize=(8, 5))
-plt.title('Uniform Floquet Quasienergy Spectrum in k-space (PBC)')
-plt.xlabel(r'$k_x$')
-plt.ylabel(r'$k_y$')
-for band in range(2):
-    plt.scatter(KX.flatten(), KY.flatten(), c=eps_k[:, :, band].flatten(), cmap='coolwarm', s=10)
-plt.colorbar(label='Quasienergy')
-plt.tight_layout()
-plt.show()
-
-# ============================================================
-# LDOS near pi : no vortex vs vortex pair
-# ============================================================
 
 xs, ys, subs = build_site_coordinates(N_x, N_y, a0=a0)
 
