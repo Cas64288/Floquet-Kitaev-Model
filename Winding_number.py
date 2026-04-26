@@ -31,7 +31,7 @@ pulse = [
     (0, 0, J0),    #  T Jz 
 ]
 
-# Time resolved evolution(discrited time further) 
+# Time resolved evolution (discrited time further for a more accurate winding number) 
 Nt = 100                 
 t_grid = np.linspace(0.0, T, Nt, endpoint=False)
 dt = T / Nt
@@ -74,8 +74,6 @@ def Heff_k(U_T, eps, T):
     # shift into interval centered at eps
     shift = np.round((eps_raw - eps) * T / (2 * np.pi))
     eps_br = eps_raw - 2 * np.pi * shift / T
-
-    # reconstruct H_eff = sum_a eps_br_a |phi_a><phi_a|
     Heff = np.zeros((2, 2), dtype=complex)
     for a in range(2):
         v = evecs[:, a].reshape(2, 1)
