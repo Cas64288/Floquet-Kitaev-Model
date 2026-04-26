@@ -31,7 +31,7 @@ pulse = [
     (0, 0, J0),    #  T Jz 
 ]
 
-# Time resolved evolution (discrited time further for a more accurate winding number) 
+# Time resolved evolution(discrited time further) 
 Nt = 100                 
 t_grid = np.linspace(0.0, T, Nt, endpoint=False)
 dt = T / Nt
@@ -64,7 +64,7 @@ for i, kx_val in enumerate(kx):
             U_t[i, j, n] = U
 
 
-# Effective Floquet Hamiltonian H_eff = (i/T) log U_T with logarithm branch centered at quasienergy epsilon.
+# Build sffective Floquet Hamiltonian  with logarithm branch centered at quasienergy epsilon.
 def Heff_k(U_T, eps, T):
     evals, evecs = np.linalg.eig(U_T)
 
@@ -74,24 +74,25 @@ def Heff_k(U_T, eps, T):
     # shift into interval centered at eps
     shift = np.round((eps_raw - eps) * T / (2 * np.pi))
     eps_br = eps_raw - 2 * np.pi * shift / T
+
     Heff = np.zeros((2, 2), dtype=complex)
     for a in range(2):
         v = evecs[:, a].reshape(2, 1)
         Heff += eps_br[a] * (v @ v.conj().T)
     return Heff
 
-# Builds U_eps(k,t)
+# Builds parameterised U_eps(k,t) where
     #U_eps(k,t) = U(k, 2t)          for 0 <= t <= T/2
     #U_eps(k,t) = exp[-i Heff (2T-2t)] for T/2 <= t <= T
 
-def build_U_eps(kx, ky, U_t, T, eps):
+def U_eps(kx, ky, U_t, T, eps):
     Nkx, Nky, Nt = len(kx), len(ky), U_t.shape[2]
     U_eps = np.zeros_like(U_t, dtype=complex)
 
     for i in range(Nkx):
         for j in range(Nky):
-            U_T = U_t[i, j, -1]
-            Heff = Heff_k(U_T, eps, T)
+            Ueps_T = U_t[i, j, -1]
+            Heff = Heff_k(Ueps_T, eps, T)
 
             for n, t in enumerate(t_grid):
                 if t <= T / 2:
@@ -104,9 +105,8 @@ def build_U_eps(kx, ky, U_t, T, eps):
                     U_eps[i, j, n] = V
     return U_eps
 
-# Computes 3D winding number W from U_eps(kx,ky,t) using discrete version of the formula in Rudner et al 2013
+# Computes 3D winding number W from U_eps
 # Forward differece scheme estimates derivatives 
-# W = (1 / 24 pi^2) ∫ d^3x ε^{μνλ} Tr[(U^{-1}∂_μU)(U^{-1}∂_νU)(U^{-1}∂_λU)] on the torus (kx, ky, t).
 def winding_number(U_grid, kx, ky, T):
     Nkx, Nky, Nt = len(kx), len(ky), U_grid.shape[2]
     dkx = (kx[-1] - kx[0]) / (Nkx - 1)
@@ -146,19 +146,9 @@ def winding_number(U_grid, kx, ky, T):
     W *= 1.0 / (24.0 * np.pi**2)
     return W
 
-# Compute W 
-eps0 = 0.0
-eps_pi = np.pi / T
+# Computing W 
+U_eps_0 = U_eps(kx, ky, U_t, T, 0)
+U_eps_pi = U_eps(kx, ky, U_t, T, np.pi / T)
 
-print("Building U_eps for eps = 0 ...")
-U_eps_0 = build_U_eps(kx, ky, U_t, T, eps0)
-
-print("Building U_eps for eps = pi/T ...")
-U_eps_pi = build_U_eps(kx, ky, U_t, T, eps_pi)
-
-print("Computing winding numbers ...")
-W_0  = winding_number(U_eps_0, kx, ky, T)
-W_pi = winding_number(U_eps_pi, kx, ky, T)
-
-print("Winding number around eps = 0     :", W_0)
-print("Winding number around eps = pi/T :", W_pi)
+print("winding number at quasienergy gap = 0 ", winding_number(U_eps_0, kx, ky, T))
+print("winding number at quasienergy gap = pi/T", winding_number(U_eps_pi, kx, ky, T))
