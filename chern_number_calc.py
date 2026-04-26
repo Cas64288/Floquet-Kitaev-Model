@@ -1,15 +1,15 @@
+# Chern number calculation for the driven Kitaev honeycomb model 
 import numpy as np
 from scipy.linalg import expm, eig
 import matplotlib.pyplot as plt
 
-# ---------- Model parameters and Floquet operator ----------
-
+# Params 
 a0 = 1.0
 T = 2*np.pi
 t_step = T / 6
 J0 = 0.9 / 2
 
-Nkx = 50   # coarse grid is enough to test; increase for convergence
+Nkx = 50   # Good enough to test for now can be increased for accuracy 
 Nky = 50
 kx_vals = np.linspace(0, 2*np.pi, Nkx, endpoint=False)
 ky_vals = np.linspace(0, 2*np.pi, Nky, endpoint=False)
@@ -22,7 +22,7 @@ pulses = [
     (0,  J0, J0),
     (0,  0,  J0),
 ]
-
+# Same functions as before 
 def kitaev_hamiltonian(kx, ky, Jx, Jy, Jz, a0):
     sig_x = np.array([[0, 1], [1, 0]], dtype=complex)
     sig_y = np.array([[0, -1j], [1j, 0]], dtype=complex)
@@ -38,9 +38,7 @@ def floquet_unitary(kx, ky):
         U_tot = U_p @ U_tot
     return U_tot
 
-# ---------- Compute eigenvectors on the k-grid ----------
-
-# eigvecs[n_band, ix, iy, :] is eigenvector of band n_band
+# Note: eigvecs[n_band, ix, iy, :] is eigenvector of band n_band
 eigvecs = np.zeros((2, Nkx, Nky, 2), dtype=complex)
 
 for ix, kx in enumerate(kx_vals):
@@ -52,16 +50,9 @@ for ix, kx in enumerate(kx_vals):
         order = np.argsort(eps)
         for n in range(2):
             v = vecs[:, order[n]]
-            # fix arbitrary phase by normalising
             eigvecs[n, ix, iy, :] = v / np.linalg.norm(v)
-
-# ---------- Fukui–Hatsugai–Suzuki Chern number ----------
-
+# Computes Chern number 
 def chern_number(eigvec_band):
-    """
-    eigvec_band[ix,iy,:] is eigenvector (normalized) on k-grid.
-    Returns integer Chern number (float close to integer).
-    """
     Nkx, Nky, dim = eigvec_band.shape
     F = 0.0 + 0.0j
 
@@ -86,9 +77,5 @@ def chern_number(eigvec_band):
     C = F.imag / (2*np.pi)
     return C.real
 
-# Chern number for lower and upper Floquet bands
-C_lower = chern_number(eigvecs[0])
-C_upper = chern_number(eigvecs[1])
-
-print("Chern number (lower band) ≈", C_lower)
-print("Chern number (upper band) ≈", C_upper)
+print("chern number for lower band  ≈", chern_number(eigvecs[0]))
+print("chern number for upper band  ≈",  chern_number(eigvecs[1])
