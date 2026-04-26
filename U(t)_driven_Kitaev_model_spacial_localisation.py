@@ -6,7 +6,7 @@ import numpy as np
 from scipy.linalg import expm
 import matplotlib.pyplot as plt
 
-
+# The Hamiltonian is first written in mixed momentum space then Fourier transformed over ky to produce a real-space description along y.
 def kitaev_ft_Hamiltonian_FT_OBC(kx, Jx, Jy, Jz, a0, N, threshold=1e-10):
     sig_x = np.array([[0, 1], [1, 0]], dtype=complex)
     sig_y = np.array([[0, -1j], [1j, 0]], dtype=complex)
@@ -27,9 +27,9 @@ def kitaev_ft_Hamiltonian_FT_OBC(kx, Jx, Jy, Jz, a0, N, threshold=1e-10):
     bigH[-2:, 0:2] = 0
     return bigH
 
-
-N = 20
-kx_vals = np.linspace(0, 2*np.pi, 20)
+# N = 100 is large, may want to reduce for testing 
+N = 100
+kx_vals = np.linspace(0, 2*np.pi, 100)
 J0 = 0.45
 a0 = 1.0
 T = 2 * np.pi
@@ -42,12 +42,14 @@ pulse = [
     (0, J0, J0),   # 5T/6: Jy and Jz
     (0, 0, J0),    # 6T/6: Jz
 ]
-
+# Eignvectors are also stored as they are used for later
 eigvals = np.zeros((len(kx_vals), 2*N), dtype=complex)
 eigvecs = np.zeros((len(kx_vals), 2*N, 2*N), dtype=complex)
 
+# Build U(T) and diagonalise for each kx
 for i, kx_val in enumerate(kx_vals):
     U_total = np.eye(2*N, dtype=complex)
+    # Build U(T) and diagonalise for each kx
     for (Jx, Jy, Jz) in pulse:
         H = kitaev_ft_Hamiltonian_FT_OBC(kx_val, Jx, Jy, Jz, a0, N)
         U = expm(-1j * H * t_step)
@@ -77,23 +79,20 @@ for i in range(len(kx_vals)):
         total_prob = np.sum(spatial_prob[i, n, :])
         edge_localization[i, n] = edge_prob / (total_prob + 1e-10) # avoid division by zero
 
-# after computing epsilon_T (shape: Nk × 2N) and edge_localization L
 
+# Group velocity calc for chirality
 vk = np.gradient(epsilon_T, kx_vals, axis=0)   # group velocity d(εT)/dkx
 sign_v = np.sign(vk)                           # +1 right-moving, -1 left-moving
-
-# Flatten for scatter
 kx_rep   = np.repeat(kx_vals, 2*N)
 eps_flat = epsilon_T.reshape(-1)
 L_flat   = edge_localization.reshape(-1)
 sign_flat = sign_v.reshape(-1)
 
-# Choose marker by chirality
-markers = np.where(sign_flat >= 0, '>', '<')   # right: '>', left: '<'
+markers = np.where(sign_flat >= 0, '>', '<')   # right: '>', left: '<' to show chirality
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-# Left panel: same as before (bands as lines)
+# Original anomalous Plot 
 bands_sorted = np.sort(epsilon_T, axis=1)
 for band in range(bands_sorted.shape[1]):
     ax1.plot(kx_vals, bands_sorted[:, band],
@@ -103,9 +102,8 @@ ax1.set_xlabel(r'$k_x a_0$')
 ax1.set_ylabel(r'$\varepsilon T$')
 ax1.set_xlim([0, 2*np.pi])
 ax1.set_ylim([-np.pi, np.pi])
-ax1.grid(alpha=0.3)
 
-# Right panel: scatter coloured by edge localisation and shaped by direction
+# Scatter plot coloured by edge localisation and chriality is shown by ">"
 cmap = plt.cm.inferno_r
 
 for m in ['>', '<']:
@@ -114,12 +112,6 @@ for m in ['>', '<']:
                 c=L_flat[mask],
                 cmap=cmap, vmin=0.0, vmax=1.0,
                 s=6, alpha=0.9, marker=m)
-
-# Optional: horizontal guide lines bracketing, say, the upper band
-eps_upper_min = 1.0   # choose by eye from spectrum
-eps_upper_max = 2.0
-ax2.axhline(eps_upper_min, color='white', ls='--', lw=0.6)
-ax2.axhline(eps_upper_max, color='white', ls='--', lw=0.6)
 
 ax2.set_xlabel(r'$k_x a_0$')
 ax2.set_ylabel(r'$\varepsilon T$')
@@ -131,6 +123,5 @@ cbar = plt.colorbar(ax2.collections[0], ax=ax2,
                     label='Edge localisation probability')
 plt.tight_layout()
 plt.show()
-
 
 # Yippe it works!
