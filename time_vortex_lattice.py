@@ -121,8 +121,7 @@ def floquet_no_vortex(T, H_pulses, Nt=60):
         U = expm(-1j * H_t * dt) @ U
     return U
 
-# ---------------- parameters and Floquet operators ----------------
-
+# params
 N_x = 15
 N_y = 15
 J0 = 0.45
@@ -130,7 +129,7 @@ a0 = 1.0
 T = 2*np.pi
 Nt = 100  # time steps for Floquet evolution
 
-delta_drive = 0  # current perturbation strength
+delta_drive = 0  # current perturbation strength, used to see when particle hole symmetry breaks 
 
 H_pulses = pulse_protocall_perturb(J0, a0, N_x, N_y, delta=delta_drive)
 U_vortex = floquet_vortex(T, H_pulses, N_x, N_y, Nt=Nt)
@@ -170,8 +169,6 @@ for m, eps in enumerate(quasi_nv):
 
 dim = evecs_v.shape[0]
 
-# ---------- LDOS with and without vortex near π ----------
-
 # LDOS with vortex (π)
 ldos_pi_v = np.zeros(dim, dtype=float)
 for m in near_pi_v:
@@ -202,8 +199,6 @@ if np.max(ldos_grid_pi_nv) > 0:
     ldos_grid_pi_nv = ldos_grid_pi_nv / np.max(ldos_grid_pi_nv)
 if np.max(ldos_grid_pi_v) > 0:
     ldos_grid_pi_v = ldos_grid_pi_v / np.max(ldos_grid_pi_v)
-
-# ---------- LDOS with and without vortex near 0 ----------
 
 # LDOS with vortex (0)
 ldos_0_v = np.zeros(dim, dtype=float)
@@ -237,7 +232,7 @@ if np.max(ldos_grid_0_v) > 0:
     ldos_grid_0_v = ldos_grid_0_v / np.max(ldos_grid_0_v)
 
 
-# ---------- per-state local DOS at vortex core (all ε) ----------
+# per state LODS 
 
 i_core = np.argmax(ldos_pi_v)  # site with max π-LDOS
 
@@ -248,7 +243,7 @@ core_weight = np.abs(evecs_v[i_core, :])**2
 if core_weight.max() > 0:
     core_weight = core_weight / core_weight.max()
 
-# ---------------- geometry helpers ----------------
+# Builds site 
 
 def honeycomb_coords(x, y, sub, a0=1.0):
     a1 = np.array([1.0, 0.0]) * a0
@@ -294,7 +289,7 @@ def draw_honeycomb_bonds(Nx, Ny, a0=1.0, lw=0.4, alpha=0.35, tol=0.15):
 
 xs, ys, subs = build_site_coordinates(N_x, N_y, a0=a0)
 
-# ---------- Quasienergy spectrum colour-coded by core LDOS near π ----------
+# Quasienergy spectrum with time votex 
 
 sort_idx = np.argsort(eps)
 eps_sorted = eps[sort_idx]
@@ -323,6 +318,7 @@ plt.tight_layout()
 plt.show()
 
 # Threshold the vortex LDOS (Isolates core from bulk)
+#### For testing
 #cut = 0.01 # keep only 80% + so we can distinctly see the bulk and vortex core 
 ldos_core = ldos_pi_v.copy()
 #ldos_core[ldos_core < cut] = 0.0
@@ -339,13 +335,13 @@ for i in range(dim):
 ldos_flat_nv = np.clip(ldos_flat_nv, 0.0, None)
 ldos_flat_v = np.clip(ldos_flat_v, 0.0, None)
 
-# Common colour range from full LDOS (so scales match)
+# So scales match 
 vmin = 0.0
 vmax = max(ldos_flat_nv.max(), ldos_flat_v.max())
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
-# --- Left: no vortex, full LDOS near pi ---
+# left plot no vortex
 ax = axes[0]
 ax.set_title(r'LDOS near $\pi$ (No Vortex)')
 ax.set_xlabel('Lx')
@@ -356,7 +352,7 @@ draw_honeycomb_bonds(N_x, N_y, a0=a0, lw=0.4, alpha=0.25)
 sc_nv = ax.scatter(xs, ys, c=ldos_flat_nv, s=25,
                    cmap='plasma_r', vmin=vmin, vmax=vmax, marker='o')
 
-# --- Right: time vortex, *thresholded* LDOS (core only) ---
+# Right plot, time vortex 
 ax = axes[1]
 ax.set_title(r'LDOS near $\pi$ (Time Vortex)')
 ax.set_xlabel('Lx')
@@ -366,8 +362,8 @@ draw_honeycomb_bonds(N_x, N_y, a0=a0, lw=0.4, alpha=0.25)
 sc_v = ax.scatter(xs, ys, c=ldos_core, s=25,
                   cmap='plasma_r', vmin=vmin, vmax=vmax, marker='o')
 
-# circle around core location (in data units)
-x0, y0 = 10.5, 6  # <- put your vortex coordinates here
+# circle around core location 
+x0, y0 = 10.5, 6  # <- put your vortex coords here
 core_circle = Circle((x0, y0), radius=0.4,
                      edgecolor='blue', facecolor='none', lw=2)
 ax.add_patch(core_circle)
@@ -375,7 +371,6 @@ ax.add_patch(core_circle)
 cbar_v = fig.colorbar(sc_v, ax=ax, fraction=0.05, pad=0.04)
 cbar_v.set_label(r'Local DOS near $\pi$')
 
-# proxy handle for legend: empty blue circle
 vortex_handle = Line2D([0], [0], marker='o', ms=10, mfc='none',
                        mec='blue', linestyle='None',
                        label='Vortex Core')
@@ -384,9 +379,6 @@ ax.legend(handles=[vortex_handle], loc='upper right')
 plt.savefig("ldos_no_vortex_vs_vortex_threshold.png", dpi=300)
 plt.show()
 
-# ---------- Additional figure: LDOS near 0 (No Vortex vs Time Vortex) ----------
-
-# Flatten grid LDOS near 0 for both cases
 ldos0_flat_nv = np.zeros(dim)
 ldos0_flat_v  = np.zeros(dim)
 for i in range(dim):
