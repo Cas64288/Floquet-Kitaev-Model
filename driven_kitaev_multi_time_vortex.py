@@ -141,7 +141,7 @@ def kitaev_hamiltonian_realspace_from_bonds(Jx, Jy, Jz, a0, Nx, Ny):
 
     return H
 # Pulse protocol
-# Same as before, real spcae hamiltonian is used
+# Same as before, real space hamiltonian needed here
 def pulse_protocol_realspace(J0, a0, Nx, Ny):
     pulses = [
         (J0, 0,  J0),
@@ -156,7 +156,7 @@ def pulse_protocol_realspace(J0, a0, Nx, Ny):
         for (Jx, Jy, Jz) in pulses
     ]
 
-
+# To identify pulse index 
 def pulse_index(t, T):
     dt = T / 6.0
     t_mod = t % T
@@ -165,7 +165,7 @@ def pulse_index(t, T):
         n = 5
     return n
 
-
+# Floquet unitary for no vortex 
 def floquet_no_vortex(T, H_pulses, Nt=60):
     dt = T / Nt
     dim = H_pulses[0].shape[0]
@@ -178,7 +178,7 @@ def floquet_no_vortex(T, H_pulses, Nt=60):
 
     return U
 
-
+#  Multi-Vortex implementation 
 def floquet_multi_vortex(T, H_pulses, Nx, Ny, vortex_list, Nt=60, a0=1.0):
     dt = T / Nt
     dim = H_pulses[0].shape[0]
@@ -203,10 +203,7 @@ def floquet_multi_vortex(T, H_pulses, Nx, Ny, vortex_list, Nt=60, a0=1.0):
 
     return U
 
-
-# ============================================================
-# Plot helpers
-# ============================================================
+# Draw nearest-neighbour bonds, connected according to sublattice A and B positions
 
 def build_site_coordinates(Nx, Ny, a0=1.0):
     dim = 2 * Nx * Ny
@@ -249,10 +246,7 @@ def draw_honeycomb_bonds(Nx, Ny, a0=1.0, lw=0.4, alpha=0.35, tol=0.15):
             plt.plot([rA[0], rB[0]], [rA[1], rB[1]], color='k', lw=lw, alpha=alpha)
 
 
-# ============================================================
-# Parameters
-# ============================================================
-
+# params
 N_x = 15
 N_y = 15
 J0 = 0.45
@@ -260,12 +254,12 @@ a0 = 1.0
 T = 2 * np.pi
 Nt = 100
 
+# Moves location of the vortex, and last argument changes the vorticity 
+# Currently set for a vortex anti vortex pair
 vortex_list = [
     (3, 7, +1),
     (10, 2, -1),
 ]
-
-
 H_pulses = pulse_protocol_realspace(J0, a0, N_x, N_y)
 U_vortex = floquet_multi_vortex(T, H_pulses, N_x, N_y, vortex_list, Nt=Nt, a0=a0)
 U_no_vortex = floquet_no_vortex(T, H_pulses, Nt=Nt)
@@ -277,7 +271,7 @@ evals_nv, evecs_nv = np.linalg.eig(U_no_vortex)
 quasi_nv = -np.angle(evals_nv)
 
 
-delta_pi = 1e-1
+delta_pi = 1e-1 # energy window
 near_pi_v = []
 near_pi_nv = []
 
@@ -322,8 +316,10 @@ if np.max(ldos_grid_pi_nv) > 0:
 if np.max(ldos_grid_pi_v) > 0:
     ldos_grid_pi_v /= np.max(ldos_grid_pi_v)
 
-print('energy', quasi_v[near_pi_v])
+#print('energy', quasi_v[near_pi_v])
 
+
+# Plotting
 xs, ys, subs = build_site_coordinates(N_x, N_y, a0=a0)
 
 ldos_flat_nv = np.zeros(dim)
@@ -377,3 +373,5 @@ ax.legend(handles=[vortex_handle, antivortex_handle], loc='upper right')
 
 plt.tight_layout()
 plt.show()
+
+# it works 
