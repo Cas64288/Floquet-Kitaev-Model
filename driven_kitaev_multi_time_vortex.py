@@ -129,10 +129,6 @@ def bond_phase(i, j, Nx, Ny, vortex_list, a0=1.0):
 
 # Real space implemtation of the lattice 
 def kitaev_hamiltonian_realspace_from_bonds(Jx, Jy, Jz, a0, Nx, Ny):
-    """
-    Real-space matrix representation of the same nearest-neighbour
-    Kitaev Hamiltonian used in k-space.
-    """
     dim = 2 * Nx * Ny
     H = np.zeros((dim, dim), dtype=complex)
     Jdict = {'x': Jx, 'y': Jy, 'z': Jz}
@@ -144,12 +140,8 @@ def kitaev_hamiltonian_realspace_from_bonds(Jx, Jy, Jz, a0, Nx, Ny):
             H[iB, iA] += -1j * J
 
     return H
-
-
-# ============================================================
-# Pulse protocol and Floquet evolution
-# ============================================================
-
+# Pulse protocol
+# Same as before, real spcae hamiltonian is used
 def pulse_protocol_realspace(J0, a0, Nx, Ny):
     pulses = [
         (J0, 0,  J0),
@@ -273,9 +265,6 @@ vortex_list = [
     (10, 2, -1),
 ]
 
-# ============================================================
-# Floquet operators
-# ============================================================
 
 H_pulses = pulse_protocol_realspace(J0, a0, N_x, N_y)
 U_vortex = floquet_multi_vortex(T, H_pulses, N_x, N_y, vortex_list, Nt=Nt, a0=a0)
@@ -287,9 +276,6 @@ quasi_v = -np.angle(evals_v)
 evals_nv, evecs_nv = np.linalg.eig(U_no_vortex)
 quasi_nv = -np.angle(evals_nv)
 
-# ============================================================
-# LDOS near pi
-# ============================================================
 
 delta_pi = 1e-1
 near_pi_v = []
