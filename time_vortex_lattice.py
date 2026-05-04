@@ -395,7 +395,7 @@ vmax0 = max(ldos0_flat_nv.max(), ldos0_flat_v.max())
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
-# --- Left: no vortex, LDOS near 0 ---
+# No time vortex near LDOS 0 
 ax = axes[0]
 ax.set_title(r'LDOS near $0$ (No Vortex)')
 ax.set_xlabel('Lx')
@@ -406,7 +406,7 @@ draw_honeycomb_bonds(N_x, N_y, a0=a0, lw=0.4, alpha=0.25)
 sc0_nv = ax.scatter(xs, ys, c=ldos0_flat_nv, s=25,
                     cmap='plasma_r', vmin=vmin0, vmax=vmax0, marker='o')
 
-# --- Right: time vortex, LDOS near 0 ---
+# Time vortex near LDOS 0 
 ax = axes[1]
 ax.set_title(r'LDOS near $0$ (Time Vortex)')
 ax.set_xlabel('Lx')
