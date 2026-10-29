@@ -11,3 +11,4 @@ This repository contains:
 - Local density of states and spatial-localisation plots.
 - Time-vortex and multiple-vortex simulations.
 <img width="1081" height="962" alt="swaggy" src="https://github.com/user-attachments/assets/b1443794-56aa-4057-a60f-873d945bbf34" />
+(Our main result)
